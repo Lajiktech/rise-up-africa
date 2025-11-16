@@ -317,7 +317,7 @@ Test credentials (from seed data):
 
 - [API Documentation](./apps/api/README.md)
 - [Deployment Guide](./DEPLOYMENT.md)
-- [Contributing Guidelines](./CONTRIBUTING.md) (if applicable)
+- [Contributing Guidelines](./CONTRIBUTING.md)
 
 ## 🏛️ Tech Stack
 
@@ -360,15 +360,15 @@ Test credentials (from seed data):
 
 ## 📝 License
 
-[Add your license here]
+- MIT License
 
 ## 🤝 Contributing
 
-[Add contributing guidelines if applicable]
+---
 
 ## 📧 Contact
 
-[Add contact information]
+info@lajiktech.com
 
 ---
 
