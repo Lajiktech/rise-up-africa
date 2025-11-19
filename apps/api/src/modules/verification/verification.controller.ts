@@ -62,6 +62,10 @@ export const adminReviewHandler = async (
     }
 
     const { verificationId } = req.params;
+    if (!verificationId) {
+      res.status(400).json({ error: "Verification ID is required" });
+      return;
+    }
     const validatedData = adminReviewSchema.parse(req.body);
     const verification = await adminReviewVerification(
       verificationId,
@@ -84,6 +88,10 @@ export const assignFieldAgentHandler = async (
 ): Promise<void> => {
   try {
     const { verificationId } = req.params;
+    if (!verificationId) {
+      res.status(400).json({ error: "Verification ID is required" });
+      return;
+    }
     const validatedData = assignFieldAgentSchema.parse(req.body);
     const verification = await assignFieldAgent(verificationId, validatedData);
     res.status(200).json(verification);
@@ -146,6 +154,10 @@ export const completeFieldVerificationHandler = async (
     }
 
     const { verificationId } = req.params;
+    if (!verificationId) {
+      res.status(400).json({ error: "Verification ID is required" });
+      return;
+    }
     const { notes } = req.body;
     const verification = await completeFieldVerification(
       verificationId,

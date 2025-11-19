@@ -148,10 +148,11 @@ export const getOpportunityApplications = async (
           country: true,
           camp: true,
           community: true,
-          verification: {
+          verifications: {
             select: {
               status: true,
             },
+            take: 1,
           },
         },
       },

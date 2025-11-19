@@ -62,6 +62,10 @@ export const getOpportunityApplicationsHandler = async (
     }
 
     const { opportunityId } = req.params;
+    if (!opportunityId) {
+      res.status(400).json({ error: "Opportunity ID is required" });
+      return;
+    }
     const applications = await getOpportunityApplications(opportunityId, req.userId);
     res.status(200).json(applications);
   } catch (error) {
@@ -84,6 +88,10 @@ export const updateApplicationStatusHandler = async (
     }
 
     const { applicationId } = req.params;
+    if (!applicationId) {
+      res.status(400).json({ error: "Application ID is required" });
+      return;
+    }
     const validatedData = updateApplicationStatusSchema.parse(req.body);
     const application = await updateApplicationStatus(
       applicationId,
@@ -111,6 +119,10 @@ export const getApplicationByIdHandler = async (
     }
 
     const { applicationId } = req.params;
+    if (!applicationId) {
+      res.status(400).json({ error: "Application ID is required" });
+      return;
+    }
     const application = await getApplicationById(applicationId, req.userId);
     res.status(200).json(application);
   } catch (error) {

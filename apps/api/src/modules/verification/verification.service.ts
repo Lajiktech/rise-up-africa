@@ -226,8 +226,9 @@ export const searchYouth = async (filters: {
   const users = await prisma.user.findMany({
     where,
     include: {
-      verification: {
+      verifications: {
         where: filters.status ? { status: filters.status as any } : undefined,
+        take: 1,
       },
       documents: {
         select: {
@@ -242,7 +243,7 @@ export const searchYouth = async (filters: {
 
   // Filter by verification status if provided
   if (filters.status) {
-    return users.filter((user) => user.verification?.status === filters.status);
+    return users.filter((user) => user.verifications[0]?.status === filters.status);
   }
 
   return users;
