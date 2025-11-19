@@ -28,6 +28,8 @@ export default function DashboardPage() {
 function YouthDashboard() {
   const { user } = useAuth();
 
+  if (!user) return null;
+
   return (
     <div className="space-y-6">
       <div>
