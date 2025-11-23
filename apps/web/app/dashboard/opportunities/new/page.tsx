@@ -21,6 +21,7 @@ export default function NewOpportunityPage() {
     requirements: "",
     category: [] as string[],
     countries: [] as string[],
+    applicationLink: "",
     deadline: "",
     maxApplicants: "",
   });
@@ -79,6 +80,7 @@ export default function NewOpportunityPage() {
         title: formData.title,
         description: formData.description,
         requirements: formData.requirements || undefined,
+        applicationLink: formData.applicationLink || undefined,
         category: formData.category as any,
         countries: formData.countries,
         deadline: formData.deadline || undefined,
@@ -250,6 +252,18 @@ export default function NewOpportunityPage() {
                   min="1"
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="applicationLink">External Application Link (optional)</Label>
+              <Input
+                id="applicationLink"
+                type="url"
+                placeholder="https://example.com/apply"
+                value={formData.applicationLink}
+                onChange={(e) => setFormData({ ...formData, applicationLink: e.target.value })}
+                disabled={loading}
+              />
             </div>
 
             <div className="flex gap-2">

@@ -12,6 +12,7 @@ import {
   updateProfile,
   getDocuments,
   getVerification,
+  listUsersHandler,
 } from "./modules/user/user.controller";
 
 // Verification routes
@@ -24,6 +25,7 @@ import {
   createFieldVisitHandler,
   completeFieldVerificationHandler,
   searchYouthHandler,
+  scheduleVisitHandler,
 } from "./modules/verification/verification.controller";
 
 // Opportunity routes
@@ -62,6 +64,13 @@ app.get("/api/user/profile", authenticate, getProfile);
 app.put("/api/user/profile", authenticate, updateProfile);
 app.get("/api/user/documents", authenticate, getDocuments);
 app.get("/api/user/verification", authenticate, getVerification);
+// Admin: list users (filter by role)
+app.get(
+  "/api/users",
+  authenticate,
+  authorize("ADMIN"),
+  listUsersHandler
+);
 
 // Document upload (authenticated - youth only)
 app.post(
@@ -89,6 +98,13 @@ app.put(
   authenticate,
   authorize("ADMIN"),
   assignFieldAgentHandler
+);
+
+app.post(
+  "/api/verification/schedule",
+  authenticate,
+  authorize("ADMIN"),
+  scheduleVisitHandler
 );
 
 // Field agent routes

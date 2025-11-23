@@ -15,6 +15,8 @@ import {
   completeFieldVerification,
   searchYouth,
 } from "./verification.service";
+import { scheduleVisit } from "./verification.service";
+import { scheduleVisitSchema } from "./verification.schema";
 import type { AuthRequest } from "../../middleware/auth.middleware";
 
 export const uploadDocumentHandler = async (
@@ -28,8 +30,32 @@ export const uploadDocumentHandler = async (
     }
 
     const validatedData = uploadDocumentSchema.parse(req.body);
-    const document = await uploadDocument(req.userId, validatedData);
-    res.status(201).json(document);
+    // Note: size may be 0 for some uploads; accept and proceed.
+    const result = await uploadDocument(req.userId, validatedData);
+    // result => { document, action }
+    res.status(201).json(result);
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(400).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+};
+
+export const scheduleVisitHandler = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.userId) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const validated = scheduleVisitSchema.parse(req.body);
+    const result = await scheduleVisit(req.userId, validated);
+    res.status(201).json(result);
   } catch (error) {
     if (error instanceof Error) {
       res.status(400).json({ error: error.message });

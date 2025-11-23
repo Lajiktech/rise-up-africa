@@ -1,6 +1,7 @@
 import { type Response } from "express";
 import { updateProfileSchema } from "./user.schema";
 import { getUserProfile, updateUserProfile, getUserDocuments, getUserVerification } from "./user.service";
+import { listUsers } from "./user.service";
 import type { AuthRequest } from "../../middleware/auth.middleware";
 
 export const getProfile = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -63,6 +64,16 @@ export const getVerification = async (req: AuthRequest, res: Response): Promise<
 
     const verification = await getUserVerification(req.userId);
     res.status(200).json(verification);
+  } catch (error) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const listUsersHandler = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { role } = req.query;
+    const users = await listUsers({ role: role as string | undefined });
+    res.status(200).json(users);
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }

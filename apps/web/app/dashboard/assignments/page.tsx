@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/use-auth";
 import { verificationApi } from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@workspace/ui/components/card";
 import { Button } from "@workspace/ui/components/button";
@@ -23,10 +25,20 @@ export default function AssignmentsPage() {
     notes: "",
   });
   const [submitting, setSubmitting] = useState(false);
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!user || user.role !== "FIELD_AGENT") {
+      router.push("/dashboard");
+      return;
+    }
+
     loadAssignments();
-  }, []);
+    const id = setInterval(loadAssignments, 15000);
+    return () => clearInterval(id);
+  }, [authLoading, user]);
 
   const loadAssignments = async () => {
     try {
@@ -92,7 +104,7 @@ export default function AssignmentsPage() {
           <CardDescription>Your assigned verification cases</CardDescription>
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {(authLoading || loading) ? (
             <div className="text-center py-8 text-muted-foreground">Loading...</div>
           ) : assignments.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
