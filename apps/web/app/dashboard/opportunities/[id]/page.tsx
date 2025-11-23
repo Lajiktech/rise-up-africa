@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
-import { opportunityApi, applicationApi } from "@/lib/api";
+import { opportunityApi, applicationApi, userApi } from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@workspace/ui/components/card";
 import { Button } from "@workspace/ui/components/button";
 import { Badge } from "@workspace/ui/components/badge";
@@ -23,12 +23,31 @@ export default function OpportunityDetailPage() {
   const [applying, setApplying] = useState(false);
   const [coverLetter, setCoverLetter] = useState("");
   const [showApplyDialog, setShowApplyDialog] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState<string | null>(null);
 
   useEffect(() => {
     if (params.id) {
       loadOpportunity();
     }
   }, [params.id]);
+
+  useEffect(() => {
+    // If the current user is a youth, fetch their verification status
+    const loadVerification = async () => {
+      if (user?.role === "YOUTH") {
+        try {
+          const v = await userApi.getVerification();
+          setVerificationStatus(v?.status || null);
+        } catch (err) {
+          setVerificationStatus(null);
+        }
+      } else {
+        setVerificationStatus(null);
+      }
+    };
+
+    loadVerification();
+  }, [user]);
 
   const loadOpportunity = async () => {
     try {
@@ -76,7 +95,10 @@ export default function OpportunityDetailPage() {
     return null;
   }
 
-  const canApply = user?.role === "YOUTH" && opportunity.isActive;
+  const canApply =
+    user?.role === "YOUTH" &&
+    verificationStatus === "VERIFIED" &&
+    opportunity.isActive;
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -101,46 +123,62 @@ export default function OpportunityDetailPage() {
               <CardTitle>Details</CardTitle>
               <CardDescription>Opportunity information</CardDescription>
             </div>
-            {canApply && (
-              <Dialog open={showApplyDialog} onOpenChange={setShowApplyDialog}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <IconCheck className="mr-2 h-4 w-4" />
-                    Apply Now
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Apply to Opportunity</DialogTitle>
-                    <DialogDescription>
-                      Submit your application for this opportunity
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="space-y-4 py-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="coverLetter">Cover Letter (Optional)</Label>
-                      <Textarea
-                        id="coverLetter"
-                        placeholder="Tell us why you're interested in this opportunity..."
-                        value={coverLetter}
-                        onChange={(e) => setCoverLetter(e.target.value)}
-                        rows={6}
-                      />
+            {user?.role === "YOUTH" && opportunity.isActive && (
+              <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
+                <Dialog open={showApplyDialog} onOpenChange={setShowApplyDialog}>
+                  <DialogTrigger asChild>
+                    <Button disabled={verificationStatus !== "VERIFIED"}>
+                      <IconCheck className="mr-2 h-4 w-4" />
+                      Apply Now
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Apply to Opportunity</DialogTitle>
+                      <DialogDescription>
+                        Submit your application for this opportunity
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="coverLetter">Cover Letter (Optional)</Label>
+                        <Textarea
+                          id="coverLetter"
+                          placeholder="Tell us why you're interested in this opportunity..."
+                          value={coverLetter}
+                          onChange={(e) => setCoverLetter(e.target.value)}
+                          rows={6}
+                        />
+                      </div>
                     </div>
-                  </div>
-                  <DialogFooter>
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowApplyDialog(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button onClick={handleApply} disabled={applying}>
-                      {applying ? "Submitting..." : "Submit Application"}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+                    <DialogFooter>
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowApplyDialog(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button onClick={handleApply} disabled={applying}>
+                        {applying ? "Submitting..." : "Submit Application"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+
+                {opportunity.applicationLink && (
+                  <Button asChild variant="outline" className="mt-2 sm:mt-0">
+                    <a href={opportunity.applicationLink} target="_blank" rel="noopener noreferrer">
+                      Apply Externally
+                    </a>
+                  </Button>
+                )}
+
+                {verificationStatus !== "VERIFIED" && (
+                  <p className="text-sm text-muted-foreground mt-2 sm:mt-0">
+                    You must be verified to apply. <a className="underline" href="/dashboard/documents">Upload verification documents</a>.
+                  </p>
+                )}
+              </div>
             )}
           </div>
         </CardHeader>

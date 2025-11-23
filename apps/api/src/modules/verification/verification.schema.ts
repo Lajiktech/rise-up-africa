@@ -5,7 +5,8 @@ export const uploadDocumentSchema = z.object({
   fileName: z.string().min(1, "File name is required"),
   fileUrl: z.string().url("Valid file URL is required"),
   mimeType: z.string().optional(),
-  size: z.number().int().positive().optional(),
+  // allow 0 sizes (some uploads may report 0) and non-integer sizes
+  size: z.number().nonnegative().optional(),
 });
 
 export const adminReviewSchema = z.object({
@@ -28,4 +29,13 @@ export type UploadDocumentInput = z.infer<typeof uploadDocumentSchema>;
 export type AdminReviewInput = z.infer<typeof adminReviewSchema>;
 export type FieldVisitInput = z.infer<typeof fieldVisitSchema>;
 export type AssignFieldAgentInput = z.infer<typeof assignFieldAgentSchema>;
+
+export const scheduleVisitSchema = z.object({
+  verificationId: z.string().min(1),
+  visitDate: z.string().datetime(),
+  notes: z.string().optional(),
+  preferredAgentId: z.string().optional(),
+});
+
+export type ScheduleVisitInput = z.infer<typeof scheduleVisitSchema>;
 

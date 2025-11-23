@@ -58,12 +58,17 @@ export default function DocumentsPage() {
 
     try {
       // In production, upload file first, then save document record
-      await verificationApi.uploadDocument({
+      const res = await verificationApi.uploadDocument({
         ...formData,
         mimeType: "application/pdf",
         size: 0,
       });
-      toast.success("Document uploaded successfully!");
+
+      if (res.action === "replaced") {
+        toast.success("Existing document replaced successfully");
+      } else {
+        toast.success("Document uploaded successfully!");
+      }
       setFormData({ type: "ID", fileName: "", fileUrl: "" });
       loadDocuments();
     } catch (error) {

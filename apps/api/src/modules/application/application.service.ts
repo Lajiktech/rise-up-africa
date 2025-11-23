@@ -134,8 +134,8 @@ export const getOpportunityApplications = async (
   if (opportunity.donorId !== donorId) {
     throw new Error("Unauthorized: You can only view applications for your own opportunities");
   }
-
-  return await prisma.application.findMany({
+  // Fetch applications and map youth.verifications array to a single `verification` field
+  const apps = await prisma.application.findMany({
     where: { opportunityId },
     include: {
       youth: {
@@ -150,6 +150,7 @@ export const getOpportunityApplications = async (
           community: true,
           verifications: {
             select: {
+              id: true,
               status: true,
             },
             take: 1,
@@ -158,6 +159,14 @@ export const getOpportunityApplications = async (
       },
     },
     orderBy: { submittedAt: "desc" },
+  });
+
+  return apps.map((app) => {
+    const { youth } = app as any;
+    const verification = (youth?.verifications && youth.verifications[0]) || null;
+    const transformedYouth = { ...youth, verification };
+    delete (transformedYouth as any).verifications;
+    return { ...app, youth: transformedYouth };
   });
 };
 

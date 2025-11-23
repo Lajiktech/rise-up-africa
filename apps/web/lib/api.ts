@@ -123,7 +123,7 @@ export const verificationApi = {
     fileUrl: string;
     mimeType?: string;
     size?: number;
-  }) => api.post<Document>("/api/verification/documents", data),
+  }) => api.post<{ document: Document; action: "created" | "replaced" }>("/api/verification/documents", data),
   getPendingVerifications: () => api.get<Verification[]>("/api/verification/pending"),
   reviewVerification: (verificationId: string, data: {
     status: "VERIFIED" | "REJECTED" | "UNDER_REVIEW";
@@ -138,6 +138,12 @@ export const verificationApi = {
     notes?: string;
     photos?: string[];
   }) => api.post<any>("/api/verification/field-visit", data),
+  scheduleVisit: (data: {
+    verificationId: string;
+    visitDate: string;
+    notes?: string;
+    preferredAgentId?: string;
+  }) => api.post<any>("/api/verification/schedule", data),
   completeVerification: (verificationId: string, notes?: string) =>
     api.put<Verification>(`/api/verification/${verificationId}/complete`, { notes }),
   searchYouth: (filters: {
@@ -153,6 +159,11 @@ export const verificationApi = {
     if (filters.status) params.append("status", filters.status);
     return api.get<User[]>(`/api/verification/search?${params.toString()}`);
   },
+};
+
+// Users API
+export const usersApi = {
+  listUsers: (role?: string) => api.get<any[]>(`/api/users${role ? `?role=${encodeURIComponent(role)}` : ""}`),
 };
 
 // Opportunity API
@@ -176,6 +187,7 @@ export const opportunityApi = {
     title: string;
     description: string;
     requirements?: string;
+    applicationLink?: string;
     category: ("REFUGEE" | "IDP" | "VULNERABLE" | "PWD")[];
     countries: string[];
     deadline?: string;

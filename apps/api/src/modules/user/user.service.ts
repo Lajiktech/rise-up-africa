@@ -96,3 +96,23 @@ export const getUserVerification = async (userId: string) => {
   });
 };
 
+export const listUsers = async (filters?: { role?: string }) => {
+  const where: any = {};
+  if (filters?.role) where.role = filters.role as any;
+
+  return await prisma.user.findMany({
+    where,
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      role: true,
+      country: true,
+      camp: true,
+      community: true,
+    },
+    orderBy: { firstName: "asc" },
+  });
+};
+

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/use-auth";
 import { verificationApi } from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@workspace/ui/components/card";
 import { Button } from "@workspace/ui/components/button";
@@ -13,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import type { Verification } from "@/lib/types";
 import { IconClipboardCheck } from "@tabler/icons-react";
+import { usersApi } from "@/lib/api";
 
 export default function VerificationsPage() {
   const [verifications, setVerifications] = useState<Verification[]>([]);
@@ -22,6 +24,9 @@ export default function VerificationsPage() {
   const [reviewNotes, setReviewNotes] = useState("");
   const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [reviewing, setReviewing] = useState(false);
+  const [showScheduleDialog, setShowScheduleDialog] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState<string | null>(null);
+  const [scheduling, setScheduling] = useState(false);
 
   useEffect(() => {
     loadVerifications();
@@ -64,6 +69,72 @@ export default function VerificationsPage() {
     setReviewStatus("VERIFIED");
     setReviewNotes("");
     setShowReviewDialog(true);
+  };
+
+  const [showAssignDialog, setShowAssignDialog] = useState(false);
+  const [agents, setAgents] = useState<any[]>([]);
+  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
+  const [assigning, setAssigning] = useState(false);
+  const { user } = useAuth();
+  const canAssign = user?.role === "ADMIN" || user?.role === "SUPER_ADMIN";
+
+  const openAssignDialog = async (verification: any) => {
+    setSelectedVerification(verification);
+    setSelectedAgentId(null);
+    setShowAssignDialog(true);
+    try {
+      const list = await usersApi.listUsers("FIELD_AGENT");
+      setAgents(list);
+    } catch (err) {
+      toast.error("Failed to load field agents");
+    }
+  };
+
+  const handleAssign = async () => {
+    if (!selectedVerification || !selectedAgentId) return;
+    setAssigning(true);
+    try {
+      await verificationApi.assignFieldAgent(selectedVerification.id, selectedAgentId);
+      toast.success("Agent assigned successfully");
+      setShowAssignDialog(false);
+      setSelectedVerification(null);
+      loadVerifications();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to assign agent");
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  const openScheduleDialog = (verification: any) => {
+    setSelectedVerification(verification);
+    setScheduleDate(null);
+    setShowScheduleDialog(true);
+  };
+
+  const handleSchedule = async () => {
+    if (!selectedVerification || !scheduleDate) return;
+    setScheduling(true);
+    try {
+      const res = await verificationApi.scheduleVisit({
+        verificationId: selectedVerification.id,
+        visitDate: new Date(scheduleDate).toISOString(),
+      });
+      if (res.assignedAgent) {
+        toast.success(
+          `Visit scheduled and assigned to ${res.assignedAgent.firstName} ${res.assignedAgent.lastName}`
+        );
+      } else {
+        toast.success("Visit scheduled successfully");
+      }
+      setShowScheduleDialog(false);
+      setSelectedVerification(null);
+      loadVerifications();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to schedule visit");
+    } finally {
+      setScheduling(false);
+    }
   };
 
   return (
@@ -131,13 +202,31 @@ export default function VerificationsPage() {
                       {verification.user?.documents?.length || 0} documents
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openReviewDialog(verification)}
-                      >
-                        Review
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openReviewDialog(verification)}
+                        >
+                          Review
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openScheduleDialog(verification)}
+                        >
+                          Schedule Visit
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openAssignDialog(verification)}
+                          disabled={!canAssign}
+                          title={!canAssign ? "Only admins can assign agents" : undefined}
+                        >
+                          Assign Agent
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -196,6 +285,87 @@ export default function VerificationsPage() {
             </Button>
             <Button onClick={handleReview} disabled={reviewing}>
               {reviewing ? "Processing..." : "Submit Review"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Assign Field Agent</DialogTitle>
+            <DialogDescription>
+              Choose a field agent to assign to this verification
+            </DialogDescription>
+          </DialogHeader>
+          {selectedVerification && (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Available Agents</Label>
+                <Select
+                  value={selectedAgentId || ""}
+                  onValueChange={(val) => setSelectedAgentId(val)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {agents.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.firstName} {a.lastName} - {a.country || "N/A"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAssignDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAssign} disabled={assigning || !selectedAgentId}>
+              {assigning ? "Assigning..." : "Assign Agent"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={showScheduleDialog} onOpenChange={setShowScheduleDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Schedule Field Visit</DialogTitle>
+            <DialogDescription>
+              Pick a date and time to schedule a field visit for this youth.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedVerification && (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="visitDate">Visit Date & Time</Label>
+                <input
+                  id="visitDate"
+                  type="datetime-local"
+                  className="w-full border rounded p-2"
+                  onChange={(e) => setScheduleDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="notes">Notes (optional)</Label>
+                <Textarea
+                  id="notes"
+                  value={reviewNotes}
+                  onChange={(e) => setReviewNotes(e.target.value)}
+                  placeholder="Add notes for the field agent..."
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowScheduleDialog(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSchedule} disabled={scheduling || !scheduleDate}>
+              {scheduling ? "Scheduling..." : "Schedule Visit"}
             </Button>
           </DialogFooter>
         </DialogContent>
